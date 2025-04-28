@@ -1,4 +1,5 @@
 import 'package:chat_app1/view/SignupScreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 
@@ -13,6 +14,8 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  final _auth = FirebaseAuth.instance;
 
   String _emailError = '';
   String _passwordError = '';
@@ -33,10 +36,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-
-    // Set the initial text
-    emailController.text = "Example@email.com";
-    passwordController.text = "Password@1";
 
     // Form animation controller
     _formAnimationController = AnimationController(
@@ -96,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // Function to validate the login form
-  void _submitForm() {
+  Future<void> _submitForm() async {
     setState(() {
       _emailError = '';
       _passwordError = '';
@@ -123,9 +122,10 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     // Regular expression for password validation
-    bool isValidPassword = RegExp(
-      r'^(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$',
-    ).hasMatch(password);
+    bool isValidPassword = true;
+    // bool isValidPassword = RegExp(
+    //   r'^(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$',
+    // ).hasMatch(password);
 
     if (password.isEmpty) {
       setState(() {
@@ -141,6 +141,18 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     if (isValid) {
+      try {
+      final user = await _auth.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      if (user != null) {
+        print("Login successful: ${user.user?.email}");
+        print("Id: ${user.user?.uid}");
+      }
+    } catch (e) {
+      print("Login failed: $e");
+    }
       ScaffoldMessenger.of(context).clearSnackBars();
 
       // Animate the success message
@@ -160,32 +172,32 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       // Navigate to profile screen with user data
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return Text("asdfjlaskdjf");
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Custom transition
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, 0.3),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-                child: child,
-              ),
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+      // Navigator.of(context).push(
+      //   PageRouteBuilder(
+      //     pageBuilder: (context, animation, secondaryAnimation) {
+      //       return Text("asdfjlaskdjf");
+      //     },
+      //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      //       // Custom transition
+      //       return FadeTransition(
+      //         opacity: animation,
+      //         child: SlideTransition(
+      //           position: Tween<Offset>(
+      //             begin: const Offset(0.0, 0.3),
+      //             end: Offset.zero,
+      //           ).animate(
+      //             CurvedAnimation(
+      //               parent: animation,
+      //               curve: Curves.easeOutCubic,
+      //             ),
+      //           ),
+      //           child: child,
+      //         ),
+      //       );
+      //     },
+      //     transitionDuration: const Duration(milliseconds: 800),
+      //   ),
+      // );
     } else {
       ScaffoldMessenger.of(context).clearSnackBars();
 
