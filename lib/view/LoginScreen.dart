@@ -1,7 +1,7 @@
+import 'package:chat_app1/view/ChatScreen.dart';
 import 'package:chat_app1/view/SignupScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -142,17 +142,29 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (isValid) {
       try {
-      final user = await _auth.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-      if (user != null) {
-        print("Login successful: ${user.user?.email}");
-        print("Id: ${user.user?.uid}");
+        print("user");
+        print(emailController.text.trim());
+        print(passwordController.text.trim());
+        print("user ${_auth.app}");
+
+        _auth
+            .signInWithEmailAndPassword(
+              email: emailController.text.trim(),
+              password: passwordController.text.trim(),
+            )
+            .then((user) {
+              print("user asdf");
+              print(user);
+            });
+        // print("userasdfasdfasdf");
+        // print(user);
+        // if (user != null) {
+        //   print("Login successful: ${user.user?.email}");
+        //   print("Id: ${user.user?.uid}");
+        // }
+      } catch (e) {
+        print("Login failed: $e");
       }
-    } catch (e) {
-      print("Login failed: $e");
-    }
       ScaffoldMessenger.of(context).clearSnackBars();
 
       // Animate the success message
@@ -172,32 +184,33 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       // Navigate to profile screen with user data
-      // Navigator.of(context).push(
-      //   PageRouteBuilder(
-      //     pageBuilder: (context, animation, secondaryAnimation) {
-      //       return Text("asdfjlaskdjf");
-      //     },
-      //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      //       // Custom transition
-      //       return FadeTransition(
-      //         opacity: animation,
-      //         child: SlideTransition(
-      //           position: Tween<Offset>(
-      //             begin: const Offset(0.0, 0.3),
-      //             end: Offset.zero,
-      //           ).animate(
-      //             CurvedAnimation(
-      //               parent: animation,
-      //               curve: Curves.easeOutCubic,
-      //             ),
-      //           ),
-      //           child: child,
-      //         ),
-      //       );
-      //     },
-      //     transitionDuration: const Duration(milliseconds: 800),
-      //   ),
-      // );
+      
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return const ChatScreen(); // Replace with your profile screen
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Custom transition
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.3),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).clearSnackBars();
 
@@ -242,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen>
             ScaleTransition(
               scale: _logoAnimation,
               child: const Center(
-                child: Text("", style: TextStyle(color: Colors.white),),
+                child: Text("", style: TextStyle(color: Colors.white)),
               ),
             ),
             FadeTransition(

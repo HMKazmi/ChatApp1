@@ -1,3 +1,4 @@
+import 'package:chat_app1/view/ChatScreen.dart';
 import 'package:chat_app1/view/LoginScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -168,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         Navigator.of(context).push(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) {
-              return Placeholder();
+              return ChatScreen();
             },
             transitionsBuilder: (
               context,

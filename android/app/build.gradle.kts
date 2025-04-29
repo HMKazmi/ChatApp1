@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    // id("com.example.chat_app1")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -13,7 +14,7 @@ plugins {
 }
 dependencies {
   // Import the Firebase BoM
-  implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+  implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
   // implementation('com.google.firebase:firebase-firestore)'
 
 

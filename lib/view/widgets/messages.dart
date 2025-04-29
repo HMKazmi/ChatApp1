@@ -140,6 +140,11 @@ Future<void> createSampleChatMessages() async {
                 _getUsernameFromEmail(authenticatedUser.email ?? 'user@example.com');
 
             final nextUserIsSame = currentMessageUserId == nextMessageUserId;
+
+            print("authenticatedUser.uid");
+            print(authenticatedUser.uid);
+            print("currentMessageUserId");
+            print(currentMessageUserId);
             if (nextUserIsSame) {
               return MessageBubble.next(
                 message: chatMessage['text'],
