@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       // Navigate to profile screen with user data
       
-      Navigator.of(context).push(
+      Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) {
             return const ChatScreen(); // Replace with your profile screen

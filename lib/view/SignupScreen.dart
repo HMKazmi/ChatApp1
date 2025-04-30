@@ -88,7 +88,7 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   // Function to validate the sign-up form
-  void _submitForm() {
+  Future<void> _submitForm() async {
     setState(() {
       _emailError = '';
       _passwordError = '';
@@ -119,9 +119,13 @@ class _SignUpScreenState extends State<SignUpScreen>
     // }
 
     // Validate Password
-    bool isValidPassword = RegExp(
-      r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
-    ).hasMatch(password);
+    // bool isValidPassword = RegExp(
+    //   r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    // ).hasMatch(password);
+    // bool isValidPassword = RegExp(
+    //   r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    // ).hasMatch(password);
+    bool isValidPassword =true;
 
     if (password.isEmpty) {
       setState(() {
@@ -159,6 +163,15 @@ class _SignUpScreenState extends State<SignUpScreen>
             // Signed up successfully
             var createdUser = userCredential.user;
             print("User signed up: ${createdUser?.uid}");
+            
+            // No need to sign in again as createUserWithEmailAndPassword
+            // automatically signs in the user
+            print("User is automatically signed in");
+            
+            // Force navigation to ChatScreen (although stream should handle this)
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const ChatScreen()),
+            );
           })
           .catchError((error) {
             ScaffoldMessenger.of(context).clearSnackBars();
@@ -185,71 +198,55 @@ class _SignUpScreenState extends State<SignUpScreen>
           });
 
       // Navigate to profile screen with user data after animation completes
-      if (createdUser) {
-        ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).clearSnackBars();
 
-        // Animate the error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+      // Animate the error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            builder: (context, value, child) {
+              return Opacity(opacity: value, child: child);
+            },
+            child: const Text(
               'Signup Successful!',
               style: TextStyle(color: Colors.white),
             ),
-
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            // content: TweenAnimationBuilder<double>(
-            //   tween: Tween<double>(begin: 0.0, end: 1.0),
-            //   duration: const Duration(milliseconds: 400),
-            //   builder: (context, value, child) {
-            //     return Opacity(opacity: value, child: child);
-            //   },
-            //   child: const Text(
-            //     'Signup Successful!',
-            //     style: TextStyle(color: Colors.white),
-            //   ),
-            // ),
-            // backgroundColor: Colors.green,
-            // behavior: SnackBarBehavior.floating,
           ),
-        );
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 
-        _auth
-            .signInWithEmailAndPassword(
-              email: emailController.text.trim(),
-              password: passwordController.text.trim(),
-            )
-            .then((user) {
-              Future.delayed(const Duration(milliseconds: 600), () {
-                Navigator.of(context).pushReplacement(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) {
-                      return ChatScreen();
-                    },
-                    transitionsBuilder: (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                      child,
-                    ) {
-                      // Hero-like transition
-                      return FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(
-                            begin: 0.95,
-                            end: 1.0,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 500),
-                  ),
-                );
-              });
-            });
-      }
+      // Future.delayed(const Duration(milliseconds: 600), () {
+      //   Navigator.of(context).pushReplacement(
+      //     PageRouteBuilder(
+      //       pageBuilder: (context, animation, secondaryAnimation) {
+      //         return ChatScreen();
+      //       },
+      //       transitionsBuilder: (
+      //         context,
+      //         animation,
+      //         secondaryAnimation,
+      //         child,
+      //       ) {
+      //         // Hero-like transition
+      //         return FadeTransition(
+      //           opacity: animation,
+      //           child: ScaleTransition(
+      //             scale: Tween<double>(
+      //               begin: 0.95,
+      //               end: 1.0,
+      //             ).animate(animation),
+      //             child: child,
+      //           ),
+      //         );
+      //       },
+      //       transitionDuration: const Duration(milliseconds: 500),
+      //     ),
+      //   );
+      // });
     }
   }
 
