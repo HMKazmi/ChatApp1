@@ -8,6 +8,8 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart'; // Add this package to pubspec.yaml
 
 class NewMessage extends StatefulWidget {
   const NewMessage({super.key});
@@ -20,7 +22,7 @@ class _NewMessageState extends State<NewMessage> {
   final messagesController = TextEditingController();
   File? _selectedImage;
   bool _isUploading = false;
-  
+
   @override
   void dispose() {
     messagesController.dispose();
@@ -35,28 +37,28 @@ class _NewMessageState extends State<NewMessage> {
   // Request camera permission
   Future<bool> _requestCameraPermission() async {
     PermissionStatus status = await Permission.camera.status;
-    
+
     if (status.isDenied) {
       status = await Permission.camera.request();
     }
-    
+
     if (status.isPermanentlyDenied) {
       _showPermissionSettingsDialog('Camera');
       return false;
     }
-    
+
     return status.isGranted;
   }
-  
+
   // Request storage/photos permission based on platform
   Future<bool> _requestStoragePermission() async {
     PermissionStatus status;
-    
+
     if (Platform.isAndroid) {
       // Check Android version
       final androidInfo = await DeviceInfoPlugin().androidInfo;
       final sdkInt = androidInfo.version.sdkInt;
-      
+
       // For Android 13+ (SDK 33+)
       if (sdkInt >= 33) {
         status = await Permission.photos.status;
@@ -78,12 +80,12 @@ class _NewMessageState extends State<NewMessage> {
     } else {
       return false; // Unsupported platform
     }
-    
+
     if (status.isPermanentlyDenied) {
       _showPermissionSettingsDialog('Gallery');
       return false;
     }
-    
+
     return status.isGranted;
   }
 
@@ -91,33 +93,34 @@ class _NewMessageState extends State<NewMessage> {
   void _showPermissionSettingsDialog(String permissionType) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$permissionType Permission Required'),
-        content: Text(
-          'This app needs $permissionType permission to send images. '
-          'Please enable it in app settings.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text('$permissionType Permission Required'),
+            content: Text(
+              'This app needs $permissionType permission to send images. '
+              'Please enable it in app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  openAppSettings();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              openAppSettings();
-            },
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
     );
   }
 
   // Pick image from gallery with permission check
   Future<void> _pickImage() async {
     final hasPermission = await _requestStoragePermission();
-    
+
     if (!hasPermission) {
       return;
     }
@@ -139,9 +142,7 @@ class _NewMessageState extends State<NewMessage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error accessing gallery: ${e.toString()}'),
-        ),
+        SnackBar(content: Text('Error accessing gallery: ${e.toString()}')),
       );
     }
   }
@@ -149,7 +150,7 @@ class _NewMessageState extends State<NewMessage> {
   // Take photo with camera with permission check
   Future<void> _takePhoto() async {
     final hasPermission = await _requestCameraPermission();
-    
+
     if (!hasPermission) {
       return;
     }
@@ -171,9 +172,7 @@ class _NewMessageState extends State<NewMessage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error accessing camera: ${e.toString()}'),
-        ),
+        SnackBar(content: Text('Error accessing camera: ${e.toString()}')),
       );
     }
   }
@@ -189,109 +188,237 @@ class _NewMessageState extends State<NewMessage> {
   void _showImageSourceOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Take a photo'),
-            onTap: () {
-              Navigator.pop(context);
-              _takePhoto();
-            },
+      builder:
+          (ctx) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePhoto();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Choose from gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage();
+                },
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.image),
-            title: const Text('Choose from gallery'),
-            onTap: () {
-              Navigator.pop(context);
-              _pickImage();
-            },
-          ),
-        ],
-      ),
     );
   }
 
-  // Upload image to Firebase Storage
-  Future<String?> _uploadImage() async {
+  // Save image locally and store path in Firestore
+  Future<String?> _saveImageLocally() async {
     if (_selectedImage == null) {
       return null;
     }
-
-    final user = FirebaseAuth.instance.currentUser!;
-    final storageRef = FirebaseStorage.instance
-        .ref()
-        .child('chat_images')
-        .child(user.uid)
-        .child('${const Uuid().v4()}${path.extension(_selectedImage!.path)}');
 
     try {
       setState(() {
         _isUploading = true;
       });
-      
-      await storageRef.putFile(_selectedImage!);
-      final imageUrl = await storageRef.getDownloadURL();
-      
+
+      // Generate unique ID for the image
+      final imageId = const Uuid().v4();
+      final extension = path.extension(_selectedImage!.path);
+      final fileName = '$imageId$extension';
+
+      // Get app's local documents directory
+      final appDir = await getApplicationDocumentsDirectory();
+      final localPath = '${appDir.path}/chat_images';
+
+      // Create directory if it doesn't exist
+      final directory = Directory(localPath);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
+      // Copy image to local storage with the unique name
+      final savedImagePath = '$localPath/$fileName';
+      await _selectedImage!.copy(savedImagePath);
+
+      print('Image saved locally at: $savedImagePath');
+
       setState(() {
         _isUploading = false;
         _selectedImage = null;
       });
-      
-      return imageUrl;
+
+      // Return the local path as the "URL"
+      return savedImagePath;
     } catch (error) {
+      print('Error saving image locally: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to upload image: ${error.toString()}'),
+          content: Text('Failed to save image: ${error.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
-      
+
       setState(() {
         _isUploading = false;
       });
-      
       return null;
     }
+  }
+
+  // FIXED: Improved Firebase Storage upload with better error handling
+  Future<String?> _uploadImageToFirebase() async {
+    if (_selectedImage == null) {
+      return null;
+    }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate a unique filename with user ID prefix for better organization
+      final fileName =
+          '${user.uid}/${const Uuid().v4()}${path.extension(_selectedImage!.path)}';
+
+      // Get file mime type
+      final mimeType =
+          'image/${path.extension(_selectedImage!.path).replaceFirst('.', '')}';
+
+      // Create reference to Firebase Storage with user-specific path
+      final Reference storageRef = FirebaseStorage.instance
+          .ref()
+          .child('chat_images')
+          .child(fileName);
+
+      // Create custom metadata
+      final metadata = SettableMetadata(
+        contentType: mimeType,
+        customMetadata: {
+          'uploaded_by': user.uid,
+          'uploaded_at': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Upload task with explicit metadata
+      final uploadTask = storageRef.putFile(_selectedImage!, metadata);
+
+      // Listen for state changes, errors, and completion events
+      uploadTask.snapshotEvents.listen(
+        (TaskSnapshot snapshot) {
+          print(
+            'Firebase upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}',
+          );
+        },
+        onError: (e) {
+          print('Firebase upload error: $e');
+        },
+      );
+
+      // Wait for the upload to complete
+      final snapshot = await uploadTask;
+
+      // Get download URL
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      print('Firebase upload successful: $downloadUrl');
+
+      return downloadUrl;
+    } catch (error) {
+      print('Firebase Storage upload error: $error');
+      return null;
+    }
+  }
+
+  // Method to handle either cloud or local storage based on results
+  Future<Map<String, dynamic>?> _handleImageStorage() async {
+    if (_selectedImage == null) {
+      return null;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      // First try Firebase Storage
+      final imageUrl = await _uploadImageToFirebase();
+
+      if (imageUrl != null) {
+        setState(() {
+          _isUploading = false;
+          _selectedImage = null;
+        });
+
+        return {'type': 'cloud', 'url': imageUrl};
+      }
+
+      // If Firebase upload failed, fall back to local storage
+      final localPath = await _saveImageLocally();
+
+      if (localPath != null) {
+        return {'type': 'local', 'url': localPath};
+      }
+    } catch (error) {
+      print('Image storage failed: $error');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to save image. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() {
+      _isUploading = false;
+    });
+
+    return null;
   }
 
   // Submit message to Firestore
   Future<void> _submitMessage() async {
     final message = messagesController.text;
     final hasImage = _selectedImage != null;
-    
+
     // Return if both text and image are empty
     if (message.trim().isEmpty && !hasImage) {
       return;
     }
-    
+
     FocusScope.of(context).unfocus();
     messagesController.clear();
-    
+
     final user = FirebaseAuth.instance.currentUser!;
-    String? imageUrl;
-    
-    // Upload image if selected
+    Map<String, dynamic>? imageData;
+
+    // Handle image if selected
     if (hasImage) {
-      imageUrl = await _uploadImage();
-      if (imageUrl == null && message.trim().isEmpty) {
-        return; // If image upload failed and no text, abort
+      imageData = await _handleImageStorage();
+      if (imageData == null && message.trim().isEmpty) {
+        return; // If image storage failed and no text, abort
       }
     }
-    
+
     // Try to get user data from Firestore
     String username;
     String? userProfileImage;
-    
+
     try {
-      final userData = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      
+      final userData =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
       if (userData.exists && userData.data() != null) {
         // Use data from Firestore if available
-        username = userData.data()!['username'] ?? _getUsernameFromEmail(user.email ?? 'user@example.com');
+        username =
+            userData.data()!['username'] ??
+            _getUsernameFromEmail(user.email ?? 'user@example.com');
         userProfileImage = userData.data()!['image_url'];
       } else {
         // If no data in Firestore, extract username from email
@@ -303,20 +430,38 @@ class _NewMessageState extends State<NewMessage> {
       username = _getUsernameFromEmail(user.email ?? 'user@example.com');
       userProfileImage = null;
     }
-    
-    // Determine message type
-    final messageType = imageUrl != null ? 'image' : 'text';
-    
-    // Add message to Firestore
-    await FirebaseFirestore.instance.collection('chat').add({
-      'text': message.trim(),
-      'createdAt': Timestamp.now(),
-      'userId': user.uid,
-      'username': username,
-      'userImage': userProfileImage,
-      'type': messageType,
-      'imageUrl': imageUrl,
-    });
+
+    // Add message to Firestore with appropriate data structure
+    try {
+      final messageData = {
+        'text': message.trim(),
+        'createdAt': Timestamp.now(),
+        'userId': user.uid,
+        'username': username,
+        'userImage': userProfileImage,
+      };
+
+      // Add image data if present
+      if (imageData != null) {
+        messageData['type'] = 'image';
+        messageData['imageUrl'] = imageData['url'];
+        messageData['imageStorageType'] =
+            imageData['type']; // 'cloud' or 'local'
+      } else {
+        messageData['type'] = 'text';
+      }
+
+      await FirebaseFirestore.instance.collection('chat').add(messageData);
+      print('Message successfully added to Firestore');
+    } catch (e) {
+      print('Error adding message to Firestore: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send message: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -369,14 +514,10 @@ class _NewMessageState extends State<NewMessage> {
               ],
             ),
           ),
-        
+
         // Message input area
         Padding(
-          padding: const EdgeInsets.only(
-            left: 15,
-            right: 1,
-            bottom: 14,
-          ),
+          padding: const EdgeInsets.only(left: 15, right: 1, bottom: 14),
           child: Row(
             children: [
               // Image picker button
@@ -385,7 +526,7 @@ class _NewMessageState extends State<NewMessage> {
                 onPressed: _isUploading ? null : _showImageSourceOptions,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              
+
               // Text field
               Expanded(
                 child: TextField(
@@ -398,10 +539,10 @@ class _NewMessageState extends State<NewMessage> {
                   ),
                 ),
               ),
-              
+
               // Send button
               _isUploading
-                ? const Padding(
+                  ? const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: SizedBox(
                       width: 24,
@@ -409,7 +550,7 @@ class _NewMessageState extends State<NewMessage> {
                       child: CircularProgressIndicator(),
                     ),
                   )
-                : IconButton(
+                  : IconButton(
                     icon: const Icon(Icons.send),
                     onPressed: _submitMessage,
                   ),

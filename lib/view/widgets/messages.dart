@@ -191,8 +191,8 @@ class Messages extends StatelessWidget {
     createSampleChatMessages();
 
     final authenticatedUser = FirebaseAuth.instance.currentUser!;
-    print("authenticatedUser.email");
-    print(authenticatedUser.email);
+    // print("authenticatedUser.email");
+    // print(authenticatedUser.email);
     return StreamBuilder(
       stream: FirebaseFirestore.instance
           .collection("chat")
