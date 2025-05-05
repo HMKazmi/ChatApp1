@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
@@ -10,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart'; // Add this package to pubspec.yaml
+import 'package:http/http.dart';
 
 class NewMessage extends StatefulWidget {
   const NewMessage({super.key});
@@ -268,7 +270,56 @@ class _NewMessageState extends State<NewMessage> {
     }
   }
 
-  // FIXED: Improved Firebase Storage upload with better error handling
+
+Future<String?> uploadHardcodedImageToFirebase() async {
+  const String imageUrl =
+      'https://th.bing.com/th/id/R.34582bcd1f2313d02158df4e47123087?rik=LE9dsJaXkR%2bxJg&riu=http%3a%2f%2fweknowyourdreams.com%2fimages%2ftrees%2ftrees-07.jpg&ehk=fS7bCWA1J1cEgA2Z8Abx4idifVrJiRLc3Nip42qjm40%3d&risl=&pid=ImgRaw&r=0';
+
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    // Download image from URL
+    final response = await http.get(Uri.parse(imageUrl));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to download image');
+    }
+
+    // Save to temp file
+    final tempDir = await getTemporaryDirectory();
+    final fileName = '${const Uuid().v4()}.jpg';
+    final tempFile = File(path.join(tempDir.path, fileName));
+    await tempFile.writeAsBytes(response.bodyBytes);
+
+    // Upload to Firebase Storage
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('downloaded_images/${user.uid}/$fileName');
+
+    final metadata = SettableMetadata(
+      contentType: 'image/jpeg',
+      customMetadata: {
+        'uploaded_by': user.uid,
+        'source': 'hardcoded_url',
+        'uploaded_at': DateTime.now().toIso8601String(),
+      },
+    );
+
+    final uploadTask = storageRef.putFile(tempFile, metadata);
+    final snapshot = await uploadTask;
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+
+    print('Image uploaded to Firebase: $downloadUrl');
+    return downloadUrl;
+  } catch (e) {
+    print('Error uploading hardcoded image: $e');
+    return null;
+  }
+}
+
+
   Future<String?> _uploadImageToFirebase() async {
     if (_selectedImage == null) {
       return null;
@@ -306,6 +357,7 @@ class _NewMessageState extends State<NewMessage> {
       // Upload task with explicit metadata
       final uploadTask = storageRef.putFile(_selectedImage!, metadata);
 
+      print('Starting Firebase upload...');
       // Listen for state changes, errors, and completion events
       uploadTask.snapshotEvents.listen(
         (TaskSnapshot snapshot) {
@@ -466,6 +518,7 @@ class _NewMessageState extends State<NewMessage> {
 
   @override
   Widget build(BuildContext context) {
+    uploadHardcodedImageToFirebase(); // Call the function to upload hardcoded image
     return Column(
       children: [
         // Show image preview if selected

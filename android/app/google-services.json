@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "949161021543",
-    "project_id": "chatapp1-41625",
-    "storage_bucket": "chatapp1-41625.firebasestorage.app"
+    "project_number": "220282962365",
+    "project_id": "chat-app-flutter-01",
+    "storage_bucket": "chat-app-flutter-01.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:949161021543:android:69cd64be7f832ad78d84c2",
+        "mobilesdk_app_id": "1:220282962365:android:1a99f4b2385bf9ade992d4",
         "android_client_info": {
-          "package_name": "com.ccapps.chatapp"
+          "package_name": "com.example.chat_app1"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDL-fdcvfXaUuIoIcqoisjudP9YqZkrnu4"
+          "current_key": "AIzaSyBl3U_2djMUkqHMzHi8-j30qik8_LcYwfg"
         }
       ],
       "services": {
@@ -26,15 +26,53 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:949161021543:android:ed2940b5239427918d84c2",
+        "mobilesdk_app_id": "1:220282962365:android:694602cf25e606cde992d4",
         "android_client_info": {
-          "package_name": "com.example.chat_app1"
+          "package_name": "com.example.first_app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDL-fdcvfXaUuIoIcqoisjudP9YqZkrnu4"
+          "current_key": "AIzaSyBl3U_2djMUkqHMzHi8-j30qik8_LcYwfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220282962365:android:a1c996e98f619407e992d4",
+        "android_client_info": {
+          "package_name": "com.gogachat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBl3U_2djMUkqHMzHi8-j30qik8_LcYwfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220282962365:android:743eb04b026be389e992d4",
+        "android_client_info": {
+          "package_name": "com.imagespace.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBl3U_2djMUkqHMzHi8-j30qik8_LcYwfg"
         }
       ],
       "services": {

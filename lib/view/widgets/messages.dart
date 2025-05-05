@@ -7,87 +7,7 @@ import 'package:intl/intl.dart'; // For formatting timestamps
 class Messages extends StatelessWidget {
   const Messages({super.key});
 
-  Future<void> createSampleChatMessages() async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    final CollectionReference chatCollection = firestore.collection('chat');
-    
-    // Check if the collection already has messages
-    final snapshot = await chatCollection.limit(1).get();
-    if (snapshot.docs.isNotEmpty) {
-      print('Chat collection already has messages. Skipping sample creation.');
-      return;
-    }
-    
-    // Current user info
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final currentUserId = currentUser?.uid ?? 'sampleCurrentUser';
-    final currentUserEmail = currentUser?.email ?? 'current@example.com';
-    final currentUsername = currentUserEmail.split('@')[0];
-    
-    // Sample other user
-    const otherUserId = 'sampleOtherUser123';
-    const otherUsername = 'alice';
-    
-    // Create sample messages
-    final sampleMessages = [
-      {
-        'text': 'Hello! Welcome to the chat app!',
-        'userId': otherUserId,
-        'username': otherUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 30))),
-        'type': 'text', // Adding message type
-      },
-      {
-        'text': 'Thanks! This is my first message.',
-        'userId': currentUserId,
-        'username': currentUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 25))),
-        'type': 'text',
-      },
-      {
-        'text': 'How are you finding the app so far?',
-        'userId': otherUserId,
-        'username': otherUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 20))),
-        'type': 'text',
-      },
-      {
-        'text': 'Pretty good! The UI is clean and responsive.',
-        'userId': currentUserId,
-        'username': currentUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 15))),
-        'type': 'text',
-      },
-      {
-        'text': 'Can we add more features like image sharing?',
-        'userId': currentUserId,
-        'username': currentUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 10))),
-        'type': 'text',
-      },
-      {
-        'text': 'Absolutely! That\'s coming in the next update.',
-        'userId': otherUserId,
-        'username': otherUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 8))),
-        'type': 'text',
-      },
-      {
-        'text': 'Great to hear that! Looking forward to it.',
-        'userId': currentUserId,
-        'username': currentUsername,
-        'createdAt': Timestamp.fromDate(DateTime.now().subtract(const Duration(minutes: 5))),
-        'type': 'text',
-      },
-    ];
-    
-    // Add messages to Firestore
-    for (final message in sampleMessages) {
-      await chatCollection.add(message);
-    }
-    
-    print('Sample chat messages created successfully!');
-  }
+
 
   // Helper function to extract username from email
   String _getUsernameFromEmail(String email) {
@@ -188,7 +108,6 @@ class Messages extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    createSampleChatMessages();
 
     final authenticatedUser = FirebaseAuth.instance.currentUser!;
     // print("authenticatedUser.email");
